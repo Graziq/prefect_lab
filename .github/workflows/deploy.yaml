@@ -1,0 +1,38 @@
+name: Deploy Hello World Flow
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: windows-latest
+
+    env:
+      PREFECT_API_KEY: ${{ secrets.PREFECT_API_KEY }}
+      PREFECT_API_URL: ${{ secrets.PREFECT_API_URL }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Configure Prefect
+        run: |
+          prefect config set PREFECT_API_URL=$env:PREFECT_API_URL 
+          prefect config set PREFECT_API_KEY=$env:PREFECT_API_KEY
+
+      - name: Deploy or Run Hello World flow
+        run: |
+          python hello_world.py

@@ -1,14 +1,38 @@
 services:
-  prefect:
-    image: prefecthq/prefect:2.14-python3.12
+  prefect-server:
+    image: prefecthq/prefect:2.16-python3.12
+    command: >
+      bash -c "
+      echo 'Aguardando inicialização do banco...';
+      sleep 10;
+      prefect config set PREFECT_API_URL=http://prefect-server:4200/api;
+      prefect config set PREFECT_UI_API_URL=http://127.0.0.1:4200/api;
+      echo 'Iniciando servidor Prefect...';
+      prefect server start --host 0.0.0.0
+      "
     ports:
-      - "4200:4200"
-    command: prefect server start --host 0.0.0.0
-    environment:
-      - PREFECT_API_DATABASE_CONNECTION_URL=sqlite+aiosqlite:///home/prefect/.prefect/orion.db
+      - "4200:4200"  # Dashboard + API
     volumes:
-      - prefect_data:/home/prefect/.prefect
-    restart: unless-stopped
+      - ./flows:/flows
+      - prefect_data:/root/.prefect
+    environment:
+      PREFECT_SERVER__DATABASE_TIMEOUT: "60"
+      PREFECT_SERVER__DATABASE_CONNECTION_URL: "sqlite+aiosqlite:////root/.prefect/prefect.db?mode=rwc"
+
+  prefect-agent:
+    image: prefecthq/prefect:2.16-python3.12
+    command: >
+      bash -c "
+      echo 'Aguardando servidor...';
+      while ! python -c \"import httpx; httpx.get('http://prefect-server:4200/api/health', timeout=5)\" 2>/dev/null; do
+        echo 'Ainda aguardando...';
+        sleep 5;
+      done;
+      echo 'Iniciando worker...';
+      prefect worker start --pool 'default-agent-pool' --type process
+      "
+    depends_on:
+      - prefect-server
 
 volumes:
   prefect_data:
