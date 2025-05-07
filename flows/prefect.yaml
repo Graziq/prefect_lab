@@ -34,3 +34,18 @@ deployments:
     anchor_date: '2025-04-30T13:22:21.903066+00:00'
     timezone: UTC
     active: true
+- name: hello-pool
+  version:
+  tags: []
+  description:
+  entrypoint: hello_world.py:hello_flow
+  parameters: {}
+  work_pool:
+    name: default-agent-pool
+    work_queue_name:
+    job_variables: {}
+  schedules:
+  - interval: 60.0
+    anchor_date: '2025-05-07T15:36:41.799643+00:00'
+    timezone: UTC
+    active: true
